@@ -1,0 +1,60 @@
+<input type="file" id="upload" accept="image/*" capture="camera">
+<canvas id="canvas"></canvas>
+<div id="stamps">
+  <img src="heart.png">
+  <img src="star.png">
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let photo = null;
+let currentStamp = null;
+let placedStamps = [];
+
+// キャンバスサイズを画面幅に合わせる
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight * 0.7;
+
+// 写真アップロード処理
+document.getElementById('upload').onchange = e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    photo = new Image();
+    photo.onload = () => draw();
+    photo.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+// スタンプ選択
+document.querySelectorAll('#stamps img').forEach(img => {
+  img.ontouchstart = () => currentStamp = img;
+});
+
+// キャンバスにスタンプ配置
+canvas.ontouchstart = e => {
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+
+  if (currentStamp) {
+    placedStamps.push({img: currentStamp, x, y, size: 80});
+    draw();
+  }
+};
+
+// 描画処理
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if (photo) {
+    // 写真をキャンバスサイズにフィットさせて描画
+    ctx.drawImage(photo,0,0,canvas.width,canvas.height);
+  }
+  placedStamps.forEach(s => {
+    ctx.drawImage(s.img, s.x, s.y, s.size, s.size);
+  });
+}
+</script>
