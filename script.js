@@ -1,4 +1,3 @@
-// ===== トリミング画面 =====
 let cropper;
 const upload = document.getElementById('upload');
 const cropArea = document.getElementById('cropArea');
@@ -16,7 +15,16 @@ if (upload) {
       img.style.maxWidth = "100%";
       cropArea.innerHTML = "";
       cropArea.appendChild(img);
-      cropper = new Cropper(img, { aspectRatio: 1 });
+
+      // DOMに追加してからCropperを初期化
+      cropper = new Cropper(img, {
+        aspectRatio: 1,
+        viewMode: 1,       // 枠が画面外に出ないように
+        movable: true,     // 枠をドラッグで移動
+        zoomable: true,    // ピンチで拡大縮小
+        rotatable: true,   // 回転可能
+        scalable: true     // サイズ変更可能
+      });
     };
     reader.readAsDataURL(file);
   };
