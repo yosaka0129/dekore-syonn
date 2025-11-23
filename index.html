@@ -3,161 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スタンプデコレーション</title>
-<style>
-  body {
-    background-color: #ffe4e1; /* 薄ピンク */
-    text-align: center;
-    font-family: sans-serif;
-  }
-  #upload, #cropBtn {
-    margin: 10px;
-    padding: 12px 20px;
-    font-size: 18px;
-    border-radius: 8px;
-    border: none;
-    background-color: #ffb6c1;
-    color: white;
-  }
-  #canvas {
-    border: 2px solid #ff69b4;
-    margin: 10px auto;
-    display: block;
-    max-width: 100%;
-    touch-action: none; /* タッチ操作用 */
-  }
-  #stamps {
-    margin-top: 15px;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  #stamps img {
-    width: 80px;
-    height: 80px;
-    margin: 5px;
-    border: 2px solid #ff69b4;
-    border-radius: 10px;
-    background-color: white;
-  }
-</style>
+<title>デコレーションシステム</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>写真にスタンプをデコろう！</h2>
+<h2>写真にデコレーション！</h2>
 <input type="file" id="upload" accept="image/*">
 <button id="cropBtn">トリミング</button>
+
 <canvas id="canvas"></canvas>
 
-<div id="stamps">
-  <img src="heart.png" alt="ハート">
-  <img src="star.png" alt="スター">
+<!-- カテゴリ切り替えタブ -->
+<div id="tabs">
+  <button onclick="showCategory('frames')">フレーム</button>
+  <button onclick="showCategory('stamps')">スタンプ</button>
+  <button onclick="showCategory('phrases')">フレーズ</button>
 </div>
 
-<script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let photo = null;
-let currentStamp = null;
-let placedStamps = [];
-let cropping = false;
-let startX, startY, endX, endY;
+<!-- 各カテゴリのスクロールバー -->
+<div id="frames" class="category"></div>
+<div id="stamps" class="category"></div>
+<div id="phrases" class="category"></div>
 
-// キャンバスサイズを画面幅に合わせる
-canvas.width = window.innerWidth * 0.9;
-canvas.height = window.innerHeight * 0.6;
-
-// 写真アップロード処理
-document.getElementById('upload').onchange = e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  reader.onload = () => {
-    photo = new Image();
-    photo.onload = () => draw();
-    photo.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-// スタンプ選択
-document.querySelectorAll('#stamps img').forEach(img => {
-  img.ontouchstart = () => currentStamp = img;
-  img.onclick = () => currentStamp = img; // PCでも選べる
-});
-
-// キャンバスにスタンプ配置 or トリミング開始
-canvas.ontouchstart = e => {
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
-  if (cropping) {
-    startX = x;
-    startY = y;
-  } else if (currentStamp) {
-    placedStamps.push({img: currentStamp, x, y, size: 80});
-    draw();
-  }
-};
-
-canvas.ontouchmove = e => {
-  if (!cropping) return;
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  endX = touch.clientX - rect.left;
-  endY = touch.clientY - rect.top;
-  draw();
-  ctx.strokeStyle = "red";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(startX, startY, endX - startX, endY - startY);
-};
-
-canvas.ontouchend = () => {
-  if (cropping) cropping = false;
-};
-
-// トリミングボタン
-document.getElementById('cropBtn').onclick = () => {
-  cropping = true;
-  alert("キャンバス上で範囲をドラッグして選んでください");
-};
-
-// トリミング実行
-function applyCrop() {
-  if (!photo || startX === undefined || endX === undefined) return;
-  const sx = Math.min(startX, endX);
-  const sy = Math.min(startY, endY);
-  const sw = Math.abs(endX - startX);
-  const sh = Math.abs(endY - startY);
-
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = sw;
-  tempCanvas.height = sh;
-  const tctx = tempCanvas.getContext('2d');
-  tctx.drawImage(photo, sx, sy, sw, sh, 0, 0, sw, sh);
-
-  // キャンバスをトリミング後のサイズに更新
-  canvas.width = sw;
-  canvas.height = sh;
-  ctx.drawImage(tempCanvas, 0, 0);
-
-  // トリミング後の写真を更新
-  photo = new Image();
-  photo.src = tempCanvas.toDataURL();
-  placedStamps = []; // スタンプはリセット
-}
-
-// 描画処理
-function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if (photo) {
-    ctx.drawImage(photo,0,0,canvas.width,canvas.height);
-  }
-  placedStamps.forEach(s => {
-    ctx.drawImage(s.img, s.x - s.size/2, s.y - s.size/2, s.size, s.size);
-  });
-}
-</script>
-
+<script src="script.js"></script>
 </body>
 </html>
