@@ -1,33 +1,49 @@
 // ===== トリミング画面 =====
 let cropper;
 const upload = document.getElementById('upload');
+const cropArea = document.getElementById('cropArea');
+const confirmBtn = document.getElementById('confirmBtn');
+const rotateBtn = document.getElementById('rotateBtn');
+
 if (upload) {
   upload.onchange = e => {
     const file = e.target.files[0];
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const img = document.createElement('img');
       img.src = reader.result;
-      document.getElementById('cropArea').innerHTML = "";
-      document.getElementById('cropArea').appendChild(img);
+      img.style.maxWidth = "100%";
+      cropArea.innerHTML = "";
+      cropArea.appendChild(img);
       cropper = new Cropper(img, { aspectRatio: 1 });
     };
     reader.readAsDataURL(file);
   };
 }
 
-const rotateBtn = document.getElementById('rotateBtn');
-if (rotateBtn) rotateBtn.onclick = () => cropper && cropper.rotate(90);
+if (rotateBtn) {
+  rotateBtn.onclick = () => {
+    if (cropper) cropper.rotate(90);
+  };
+}
 
-const confirmBtn = document.getElementById('confirmBtn');
-if (confirmBtn) confirmBtn.onclick = () => {
-  if (cropper) {
+if (confirmBtn) {
+  confirmBtn.onclick = () => {
+    if (!cropper) {
+      alert("まず写真をアップロードしてください！");
+      return;
+    }
     const croppedCanvas = cropper.getCroppedCanvas();
-    const dataUrl = croppedCanvas.toDataURL();
+    if (!croppedCanvas) {
+      alert("トリミング範囲が選択されていません！");
+      return;
+    }
+    const dataUrl = croppedCanvas.toDataURL("image/png");
     sessionStorage.setItem("croppedPhoto", dataUrl);
     window.location.href = "decoration.html";
-  }
-};
+  };
+}
 
 // ===== デコレーション画面 =====
 const canvas = document.getElementById('canvas');
@@ -47,8 +63,18 @@ if (canvas) {
 
   function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    if (photo) ctx.drawImage(photo,0,0,canvas.width,canvas.height);
 
+    // 写真を比率維持で中央に配置
+    if (photo) {
+      const scale = Math.min(canvas.width / photo.width, canvas.height / photo.height);
+      const drawWidth = photo.width * scale;
+      const drawHeight = photo.height * scale;
+      const x = (canvas.width - drawWidth) / 2;
+      const y = (canvas.height - drawHeight) / 2;
+      ctx.drawImage(photo, x, y, drawWidth, drawHeight);
+    }
+
+    // スタンプ描画
     placedStamps.forEach(s => {
       ctx.save();
       ctx.translate(s.x, s.y);
@@ -62,6 +88,7 @@ if (canvas) {
       ctx.restore();
     });
 
+    // フレーム描画
     if (currentFrame) {
       ctx.drawImage(currentFrame,0,0,canvas.width,canvas.height);
     }
@@ -121,10 +148,31 @@ if (canvas) {
   }
 
   function showCategory(name) {
-    document.querySelectorAll('.category').forEach(div => div.style.display = 'none');
-    document.getElementById(name).style.display = 'block';
+  // すべてのカテゴリを非表示にする
+  document.querySelectorAll('.category').forEach(div => {
+    div.style.display = 'none';
+  });
+
+  // 指定されたカテゴリだけ表示する
+  const target = document.getElementById(name);
+  if (target) {
+    target.style.display = 'block';
+  }
+}
+  function showCategory(name) {
+    // すべてのカテゴリを非表示にする
+    document.querySelectorAll('.category').forEach(div => {
+      div.style.display = 'none';
+    });
+
+    // 指定されたカテゴリだけ表示する
+    const target = document.getElementById(name);
+    if (target) {
+      target.style.display = 'block';
+    }
   }
 
+  // ===== ここを追加 =====
   ["frames","stamps","phrases"].forEach(loadCategory);
   showCategory("stamps");
 }
