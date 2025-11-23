@@ -112,13 +112,30 @@ document.getElementById('saveBtn').onclick = () => {
 
 // 描画処理
 function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if (photo) ctx.drawImage(photo,0,0,canvas.width,canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 写真の比率を維持して中央に配置
+  let photoX = 0, photoY = 0, photoW = canvas.width, photoH = canvas.height;
+  if (photo) {
+    const scale = Math.min(canvas.width / photo.width, canvas.height / photo.height);
+    photoW = photo.width * scale;
+    photoH = photo.height * scale;
+    photoX = (canvas.width - photoW) / 2;
+    photoY = (canvas.height - photoH) / 2;
+    ctx.drawImage(photo, photoX, photoY, photoW, photoH);
+  }
+
+  // スタンプ描画（写真の上に）
   placedStamps.forEach(s => {
     ctx.save();
     ctx.translate(s.x, s.y);
-    ctx.rotate(s.angle * Math.PI/180);
-    ctx.drawImage(s.img, -s.size/2, -s.size/2, s.size, s.size);
+    ctx.rotate(s.angle * Math.PI / 180);
+    ctx.drawImage(s.img, -s.size / 2, -s.size / 2, s.size, s.size);
     ctx.restore();
   });
+
+  // フレーム描画（最前面に重ねる）
+  if (currentFrame) {
+    ctx.drawImage(currentFrame, 0, 0, canvas.width, canvas.height);
+  }
 }
