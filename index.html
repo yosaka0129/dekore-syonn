@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>デコレーションシステム</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デコレーションシステム</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h2>写真にデコレーション！</h2>
 <input type="file" id="upload" accept="image/*">
 <button id="cropBtn">トリミング</button>
+<button id="undoBtn">戻る</button>
+<button id="deleteBtn">削除</button>
+<button id="saveBtn">保存</button>
 
 <canvas id="canvas"></canvas>
 
@@ -26,6 +29,8 @@
 <div id="stamps" class="category"></div>
 <div id="phrases" class="category"></div>
 
+<script src="https://unpkg.com/cropperjs"></script>
+<link rel="stylesheet" href="https://unpkg.com/cropperjs/dist/cropper.css">
 <script src="script.js"></script>
 </body>
 </html>

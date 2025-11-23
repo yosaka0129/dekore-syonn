@@ -3,7 +3,7 @@ body {
   text-align: center;
   font-family: sans-serif;
 }
-#upload, #cropBtn, #tabs button {
+#upload, #cropBtn, #undoBtn, #deleteBtn, #saveBtn, #tabs button {
   margin: 10px;
   padding: 12px 20px;
   font-size: 18px;
@@ -31,4 +31,5 @@ body {
   border: 2px solid #ff69b4;
   border-radius: 10px;
   background-color: white;
+  cursor: pointer;
 }
