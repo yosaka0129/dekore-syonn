@@ -1,9 +1,9 @@
 body {
-  background-color: #ffe4e1; /* 薄ピンク */
+  background-color: #ffe4e1;
   text-align: center;
   font-family: sans-serif;
 }
-#upload, #cropBtn, #undoBtn, #deleteBtn, #saveBtn, #tabs button {
+button, #upload {
   margin: 10px;
   padding: 12px 20px;
   font-size: 18px;
@@ -22,7 +22,7 @@ body {
   margin-top: 15px;
   overflow-x: auto;
   white-space: nowrap;
-  display: none; /* 初期は非表示 */
+  display: none;
 }
 .category img {
   width: 80px;

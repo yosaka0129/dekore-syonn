@@ -1,141 +1,130 @@
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let photo = null;
-let currentStamp = null;
-let placedStamps = [];
-let selectedStamp = null;
-
-canvas.width = window.innerWidth * 0.9;
-canvas.height = window.innerHeight * 0.6;
-
-// 写真アップロード & Cropperでトリミング
+// ===== トリミング画面 =====
 let cropper;
-document.getElementById('upload').onchange = e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = document.createElement('img');
-    img.src = reader.result;
-    document.body.appendChild(img);
-    cropper = new Cropper(img, { aspectRatio: 1 });
+const upload = document.getElementById('upload');
+if (upload) {
+  upload.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = document.createElement('img');
+      img.src = reader.result;
+      document.getElementById('cropArea').innerHTML = "";
+      document.getElementById('cropArea').appendChild(img);
+      cropper = new Cropper(img, { aspectRatio: 1 });
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
-};
+}
 
-document.getElementById('cropBtn').onclick = () => {
+const rotateBtn = document.getElementById('rotateBtn');
+if (rotateBtn) rotateBtn.onclick = () => cropper && cropper.rotate(90);
+
+const confirmBtn = document.getElementById('confirmBtn');
+if (confirmBtn) confirmBtn.onclick = () => {
   if (cropper) {
     const croppedCanvas = cropper.getCroppedCanvas();
-    photo = new Image();
-    photo.onload = () => draw();
-    photo.src = croppedCanvas.toDataURL();
-    cropper.destroy();
-    document.querySelector('img').remove();
+    const dataUrl = croppedCanvas.toDataURL();
+    sessionStorage.setItem("croppedPhoto", dataUrl);
+    window.location.href = "decoration.html";
   }
 };
 
-// JSONからカテゴリを読み込んで自動生成
-function loadCategory(name) {
-  fetch(`assets/${name}/list.json`)
-    .then(res => res.json())
-    .then(files => {
-      const container = document.getElementById(name);
-      container.innerHTML = "";
-      files.forEach(file => {
-        const img = document.createElement("img");
-        img.src = `assets/${name}/${file}`;
-        img.onclick = () => currentStamp = img;
-        container.appendChild(img);
-      });
+// ===== デコレーション画面 =====
+const canvas = document.getElementById('canvas');
+if (canvas) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth * 0.9;
+  canvas.height = window.innerHeight * 0.6;
+
+  let photo = new Image();
+  photo.src = sessionStorage.getItem("croppedPhoto");
+  photo.onload = () => draw();
+
+  let placedStamps = [];
+  let selectedStamp = null;
+  let currentStamp = null;
+  let currentFrame = null;
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (photo) ctx.drawImage(photo,0,0,canvas.width,canvas.height);
+
+    placedStamps.forEach(s => {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle * Math.PI/180);
+      ctx.drawImage(s.img, -s.size/2, -s.size/2, s.size, s.size);
+      if (s === selectedStamp) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-s.size/2, -s.size/2, s.size, s.size);
+      }
+      ctx.restore();
     });
-}
 
-// カテゴリ切り替え
-function showCategory(name) {
-  document.querySelectorAll('.category').forEach(div => div.style.display = 'none');
-  document.getElementById(name).style.display = 'block';
-}
-
-// 初期ロード
-["frames","stamps","phrases"].forEach(loadCategory);
-showCategory("stamps");
-
-// キャンバスクリックでスタンプ配置 or 選択
-canvas.onclick = e => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  // 既存スタンプ選択判定
-  selectedStamp = placedStamps.find(s =>
-    x >= s.x - s.size/2 && x <= s.x + s.size/2 &&
-    y >= s.y - s.size/2 && y <= s.y + s.size/2
-  );
-
-  if (!selectedStamp && currentStamp) {
-    placedStamps.push({img: currentStamp, x, y, size: 80, angle: 0});
-    draw();
+    if (currentFrame) {
+      ctx.drawImage(currentFrame,0,0,canvas.width,canvas.height);
+    }
   }
-};
 
-// スタンプ移動・拡大・回転（簡易版）
-canvas.onmousemove = e => {
-  if (selectedStamp && e.buttons === 1) {
+  canvas.onclick = e => {
     const rect = canvas.getBoundingClientRect();
-    selectedStamp.x = e.clientX - rect.left;
-    selectedStamp.y = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    selectedStamp = placedStamps.find(s =>
+      x >= s.x - s.size/2 && x <= s.x + s.size/2 &&
+      y >= s.y - s.size/2 && y <= s.y + s.size/2
+    );
+    if (!selectedStamp && currentStamp) {
+      placedStamps.push({img: currentStamp, x, y, size: 80, angle: 0});
+      draw();
+    }
+  };
+
+  document.getElementById('undoBtn').onclick = () => {
+    placedStamps.pop();
     draw();
-  }
-};
+  };
 
-// Undoボタン
-document.getElementById('undoBtn').onclick = () => {
-  placedStamps.pop();
-  draw();
-};
+  document.getElementById('deleteBtn').onclick = () => {
+    if (selectedStamp) {
+      placedStamps = placedStamps.filter(s => s !== selectedStamp);
+      selectedStamp = null;
+      draw();
+    }
+  };
 
-// 削除ボタン
-document.getElementById('deleteBtn').onclick = () => {
-  if (selectedStamp) {
-    placedStamps = placedStamps.filter(s => s !== selectedStamp);
-    selectedStamp = null;
-    draw();
-  }
-};
+  document.getElementById('saveBtn').onclick = () => {
+    const link = document.createElement('a');
+    link.download = 'decorated.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
-// 保存ボタン
-document.getElementById('saveBtn').onclick = () => {
-  const link = document.createElement('a');
-  link.download = 'decorated.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-};
-
-// 描画処理
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 写真の比率を維持して中央に配置
-  let photoX = 0, photoY = 0, photoW = canvas.width, photoH = canvas.height;
-  if (photo) {
-    const scale = Math.min(canvas.width / photo.width, canvas.height / photo.height);
-    photoW = photo.width * scale;
-    photoH = photo.height * scale;
-    photoX = (canvas.width - photoW) / 2;
-    photoY = (canvas.height - photoH) / 2;
-    ctx.drawImage(photo, photoX, photoY, photoW, photoH);
+  function loadCategory(name) {
+    fetch(`assets/${name}/list.json`)
+      .then(res => res.json())
+      .then(files => {
+        const container = document.getElementById(name);
+        container.innerHTML = "";
+        files.forEach(file => {
+          const img = document.createElement("img");
+          img.src = `assets/${name}/${file}`;
+          img.onclick = () => {
+            if (name === "frames") currentFrame = img;
+            else currentStamp = img;
+            draw();
+          };
+          container.appendChild(img);
+        });
+      });
   }
 
-  // スタンプ描画（写真の上に）
-  placedStamps.forEach(s => {
-    ctx.save();
-    ctx.translate(s.x, s.y);
-    ctx.rotate(s.angle * Math.PI / 180);
-    ctx.drawImage(s.img, -s.size / 2, -s.size / 2, s.size, s.size);
-    ctx.restore();
-  });
-
-  // フレーム描画（最前面に重ねる）
-  if (currentFrame) {
-    ctx.drawImage(currentFrame, 0, 0, canvas.width, canvas.height);
+  function showCategory(name) {
+    document.querySelectorAll('.category').forEach(div => div.style.display = 'none');
+    document.getElementById(name).style.display = 'block';
   }
+
+  ["frames","stamps","phrases"].forEach(loadCategory);
+  showCategory("stamps");
 }
